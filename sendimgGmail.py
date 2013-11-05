@@ -6,12 +6,12 @@ from email.MIMEImage import MIMEImage
 host = "smtp.gmail.com"
 port = 587
 
-from_ = "daiki@bci-lab.info"
+from_ = "sender email"
 to = raw_input("input address : ")
 passwd = raw_input("input passward : ")
 subject = u"件名"
 body = "this is body of mail"
-images = ["attached_1.jpg", "attached_2.png"]
+images = ["attachedIMG.jpg", "attachedIMG.png"]
 
 mmulti = MIMEMultipart()
 mmulti["From"] = from_
