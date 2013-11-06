@@ -1,4 +1,4 @@
-﻿import smtplib
+import smtplib
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
@@ -6,7 +6,7 @@ from email.MIMEImage import MIMEImage
 host = "smtp.gmail.com"
 port = 587
 
-from_ = "daiki@bci-lab.info"
+from_ = "sender address"
 to = raw_input("input address : ")
 passwd = raw_input("input passward : ")
 subject = u"件名"
