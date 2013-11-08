@@ -23,6 +23,16 @@ def NLST(ftp, path):
         print name[2:],
     print 
 
+def RENAME(ftp, fromName, toName):
+    ftp.rename(fromName, toName)
+    print "file name was changed " + fromName + " -> " + toName
+
+def MAKEDIR(ftp, name):
+    ftp.mkd(name)
+
+def SIZE(ftp, name):
+    print ftp.size(name)
+	
 if __name__ == "__main__":
     host = raw_input("input host name : ")
     username = raw_input("input user name : ")
@@ -45,7 +55,19 @@ if __name__ == "__main__":
             elif len(command) == 1:
                 command.append('./')
             NLST(ftp, command[1])
+        elif command[0] == "mv":
+            if len(command) != 3:
+                print "Usage : mv [fromName] [toName]"
+            RENAME(ftp, command[1], command[2])
+        elif command[0] == "mkdir":
+            if len(command) != 2:
+                print "Usage : mkdir dirName"
+        elif command[0] == "du":
+            if len(command) == 2:
+                SIZE(ftp, command[1])
+            
         elif command[0] == "quit":
             ftp.quit()
             break
-        
+        else:
+            print "command " + command[0] + " is not defined"  
