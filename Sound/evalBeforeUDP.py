@@ -32,7 +32,6 @@ if __name__ == "__main__":
     for frame in frames:
         udp.sendto(frame,("127.0.0.1", 12345))
 
-
     dataBefore = "".join(frames)
     result = np.frombuffer(dataBefore, dtype = "int16") / float(2**15)
     print " ", len(result), "samples"
