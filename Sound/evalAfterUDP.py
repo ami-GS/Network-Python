@@ -16,7 +16,6 @@ def Receive():
     moveFlag = True
 
     while True:
-#        print len(frames)
         try:
             recv, addr = udp.recvfrom(CHUNK)
             frames.append(recv)
