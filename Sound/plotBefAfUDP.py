@@ -8,18 +8,26 @@ from pylab import *
 import time
 
 
-class Server(Thread):
+class UDP():
+    def getFrames(self):
+        return self.frames
+    def getJoinedData(self):
+        return "".join(self.frames)
+    def getData(self):
+        return np.frombuffer(self.getJoinedData(), dtype = "int16") / float(2**15)
 
+
+
+class Server(Thread, UDP):
     def __init__(self, CHUNK):
         Thread.__init__(self)
         self.setDaemon(True)
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp.bind(("127.0.0.1", 12345))
-        self.CHUNK = CHUNK
+        self.CHUNK = CHUNK*4
         self.frames = []
         self.finRecv = False
         self.moveFlag = True
-
 
 
     def run(self):
@@ -36,17 +44,8 @@ class Server(Thread):
         self.finRecv = True
 
 
-    def getFrames(self):
-        return self.frames
 
-    def getJoinedData(self):
-        return "".join(self.frames)
-
-    def getData(self):
-        return np.frombuffer(self.getJoinedData(), dtype = "int16") / float(2**15)
-
-
-class Client(Thread):
+class Client(Thread, UDP):
     def __init__(self, stream, CHUNK, recTime):
         Thread.__init__(self)
         self.setDaemon(True)
@@ -64,16 +63,8 @@ class Client(Thread):
         self.finRec = True
 
         for frame in self.frames:
-            self.udp.sendto(frame,("127.0.0.1", 12345))
+            self.udp.sendto(frame, ("127.0.0.1", 12345))
 
-    def getFrames(self):
-        return self.frames
-
-    def getJoinedData(self):
-        return "".join(self.frames)
-
-    def getData(self):
-        return np.frombuffer(self.getJoinedData(), dtype = "int16") / float(2**15)
 
 if __name__ == "__main__":
     FORMAT = pyaudio.paInt16
@@ -81,7 +72,7 @@ if __name__ == "__main__":
     RATE = 44100
 #    RATE = 8000#phone
     CHUNK = 1024
-    RECORD_SECONDS = 3
+    RECORD_SECONDS = 10
 
     p = pyaudio.PyAudio()
 
@@ -93,7 +84,9 @@ if __name__ == "__main__":
                     )
 
     client = Client(stream, CHUNK, RECORD_SECONDS)
+
     server = Server(CHUNK)
+
     server.start()
     client.start()
 
@@ -113,7 +106,7 @@ if __name__ == "__main__":
     print "After sample:", len(Sresult)
     print float(len(Sresult))/len(Cresult)*100, "% data could be send"
 
-    """
+ 
     x = arange(0, RECORD_SECONDS, float(RECORD_SECONDS) / len(Cresult))
     subplot(211)
     plot(x, Cresult)
@@ -128,4 +121,4 @@ if __name__ == "__main__":
     title("After")
 
     show()
-    """
+
