@@ -9,6 +9,11 @@ import time
 
 
 class UDP():
+    def __init__(self):
+        self.frames = []
+        self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.finFlag = False
+
     def getFrames(self):
         return self.frames
     def getJoinedData(self):
@@ -21,14 +26,11 @@ class UDP():
 class Server(Thread, UDP):
     def __init__(self, CHUNK):
         Thread.__init__(self)
+        UDP.__init__(self)
         self.setDaemon(True)
-        self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp.bind(("127.0.0.1", 12345))
         self.CHUNK = CHUNK*4
-        self.frames = []
-        self.finRecv = False
         self.moveFlag = True
-
 
     def run(self):
         while True:
@@ -41,26 +43,23 @@ class Server(Thread, UDP):
             except socket.error, msg:
                 break
 
-        self.finRecv = True
-
+        self.finFlag = True
 
 
 class Client(Thread, UDP):
     def __init__(self, stream, CHUNK, recTime):
         Thread.__init__(self)
+        UDP.__init__(self)
         self.setDaemon(True)
-        self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.CHUNK = CHUNK
         self.stream = stream
-        self.frames = []
         self.recTime = recTime
-        self.finRec = False
 
     def run(self):
         for i in range(int(self.stream._rate / self.CHUNK * self.recTime)):
             self.frames.append(self.stream.read(self.CHUNK))
 
-        self.finRec = True
+        self.finFlag = True
 
         for frame in self.frames:
             self.udp.sendto(frame, ("127.0.0.1", 12345))
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     RATE = 44100
 #    RATE = 8000#phone
     CHUNK = 1024
-    RECORD_SECONDS = 10
+    RECORD_SECONDS = 3
 
     p = pyaudio.PyAudio()
 
@@ -91,12 +90,12 @@ if __name__ == "__main__":
     client.start()
 
 
-    while not client.finRec:
+    while not client.finFlag:
         time.sleep(0.1)
     else:
         Cresult = client.getData()
 
-    while not server.finRecv:
+    while not server.finFlag:
         time.sleep(0.1)
     else:
         Sresult = server.getData()
