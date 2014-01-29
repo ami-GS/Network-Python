@@ -11,8 +11,14 @@ if __name__ == "__main__":
 	udp.bind(("127.0.0.1", 12345))
 	
 	buff = 1024
+	split = 10
+	imstr = [""]*split
 	while True:
-		jpgstring, addr = udp.recvfrom(buff*64)
+		for i in range(split):
+			imstr[i], addr = udp.recvfrom(buff*32)
+
+		jpgstring = "".join(imstr)
+
 		jpgstring = zlib.decompress(jpgstring)
 		narray = numpy.fromstring(jpgstring, dtype = "uint8")
 		decimg = cv2.imdecode(narray,1)
