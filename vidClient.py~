@@ -6,7 +6,7 @@ import zlib
 if __name__ == "__main__":
 	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	
-#	cv.NamedWindow("ClientCAM", 1)
+	cv.NamedWindow("ClientCAM", 1)
 	capture = cv.CaptureFromCAM(0)
 	cv.SetCaptureProperty(capture,cv.CV_CAP_PROP_FRAME_WIDTH,160)
 	cv.SetCaptureProperty(capture,cv.CV_CAP_PROP_FRAME_HEIGHT,120)  
