@@ -1,18 +1,19 @@
 __author__ = 'daiki'
 
 import socket
-from threading import Thread
+import threading
 import pyaudio
 import numpy as np
 from pylab import *
 import time
+import zlib
 
+event = threading.Event()
 
 class UDP():
     def __init__(self):
         self.frames = []
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.finFlag = False
 
     def getFrames(self):
         return self.frames
@@ -23,9 +24,9 @@ class UDP():
 
 
 
-class Server(Thread, UDP):
+class Server(threading.Thread, UDP):
     def __init__(self, CHUNK):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         UDP.__init__(self)
         self.setDaemon(True)
         self.udp.bind(("127.0.0.1", 12345))
@@ -36,19 +37,20 @@ class Server(Thread, UDP):
         while True:
             try:
                 recv, addr = self.udp.recvfrom(self.CHUNK)
-                self.frames.append(recv)
+                self.frames.append(zlib.decompress(recv))
                 if self.moveFlag:
                     self.udp.settimeout(1)
                     self.moveFlag = False
             except socket.error, msg:
                 break
+        
+        event.set()
+        event.clear()
 
-        self.finFlag = True
 
-
-class Client(Thread, UDP):
+class Client(threading.Thread, UDP):
     def __init__(self, stream, CHUNK, recTime):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         UDP.__init__(self)
         self.setDaemon(True)
         self.CHUNK = CHUNK
@@ -59,10 +61,11 @@ class Client(Thread, UDP):
         for i in range(int(self.stream._rate / self.CHUNK * self.recTime)):
             self.frames.append(self.stream.read(self.CHUNK))
 
-        self.finFlag = True
+        event.set()
+        event.clear()
 
         for frame in self.frames:
-            self.udp.sendto(frame, ("127.0.0.1", 12345))
+            self.udp.sendto(zlib.compress(frame), ("127.0.0.1", 12345))
 
 
 if __name__ == "__main__":
@@ -71,7 +74,7 @@ if __name__ == "__main__":
     RATE = 44100
 #    RATE = 8000#phone
     CHUNK = 1024
-    RECORD_SECONDS = 3
+    RECORD_SECONDS = 20
 
     p = pyaudio.PyAudio()
 
@@ -90,16 +93,10 @@ if __name__ == "__main__":
     client.start()
 
 
-    while not client.finFlag:
-        time.sleep(0.1)
-    else:
-        Cresult = client.getData()
-
-    while not server.finFlag:
-        time.sleep(0.1)
-    else:
-        Sresult = server.getData()
-
+    event.wait()
+    Cresult = client.getData()
+    event.wait()
+    Sresult = server.getData()
 
     print "Before sample:", len(Cresult)
     print "After sample:", len(Sresult)
