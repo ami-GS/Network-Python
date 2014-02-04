@@ -22,7 +22,7 @@ if __name__ == "__main__":
 		jpglen = len(jpgstring)
 		for i in range(split-1):
 			splittedstr[i] = jpgstring[jpglen/split*i:jpglen/split*(i+1)]
-			splittedstr[split-1] = jpgstring[jpglen/split*(split-1):]
+		splittedstr[split-1] = jpgstring[jpglen/split*(split-1):]
 
 		for i in range(split):
 			udp.sendto(splittedstr[i], ("127.0.0.1", 12345))
