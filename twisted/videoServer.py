@@ -17,10 +17,10 @@ class VideoServer(DatagramProtocol):
 
     def sendDatagram(self):
         if len(self.video.frames):
-            datagram = self.video.frames.pop(0)
-            for i in range(self.video.split):
-                self.transport.write(datagram[i])
-
+            while len(self.video.frames):
+                datagram = self.video.frames.pop(0)
+                for i in range(self.video.split):
+                    self.transport.write(datagram[i])
         else:
             reactor.stop()
             self.video.stop()
@@ -31,11 +31,11 @@ class videoStore(threading.Thread):
         self.setDaemon(True)
         self.frames = []
         self.capture = cv.CaptureFromCAM(0)
-        self.split = 10
+        self.split = 2
         self.splittedStr = [""]*self.split
         cv.NamedWindow("ServerCAM",1)
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 480)
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 360)
+        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 24)
+        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 18)
 
     def run(self):
         split = self.split
@@ -50,7 +50,7 @@ class videoStore(threading.Thread):
         jpglen = len(jpgstring)
         for i in range(split-1):
             self.splittedStr[i] = jpgstring[jpglen/split*i:jpglen/split*(i+1)]
-        self.splittedStr[split-1] = jpgstring[jpglen/split*(split-1)]
+        self.splittedStr[split-1] = jpgstring[jpglen/split*(split-1):]
 
         self.frames.append(self.splittedStr)
 
