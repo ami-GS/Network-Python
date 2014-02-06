@@ -8,7 +8,6 @@ from twisted.internet import reactor
 
 class VideoServer(DatagramProtocol):
     def __init__(self, video):
-        #DatagramProtocol.__init__(self)
         self.video = video
 
     def startProtocol(self):
@@ -16,26 +15,22 @@ class VideoServer(DatagramProtocol):
         self.sendDatagram()
 
     def sendDatagram(self):
-        if len(self.video.frames):
-            while len(self.video.frames):
+        while True:
+            if len(self.video.frames):
                 datagram = self.video.frames.pop(0)
                 for i in range(self.video.split):
                     self.transport.write(datagram[i])
-        else:
-            reactor.stop()
-            self.video.stop()
+            else:
+                continue
 
 class videoStore(threading.Thread):
-    def __init__(self):
+    def __init__(self, capture):
         threading.Thread.__init__(self)
         self.setDaemon(True)
+        self.capture = capture
         self.frames = []
-        self.capture = cv.CaptureFromCAM(0)
-        self.split = 2
+        self.split = 10
         self.splittedStr = [""]*self.split
-        cv.NamedWindow("ServerCAM",1)
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 24)
-        cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 18)
 
     def run(self):
         split = self.split
@@ -45,12 +40,13 @@ class videoStore(threading.Thread):
     def takePic(self, split):
         img = cv.QueryFrame(self.capture)
         jpgstring = cv.EncodeImage(".jpeg", img).tostring()
-        jpgstring = zlib.compress(jpgstring)
+        #jpgstring = zlib.compress(jpgstring)
 
         jpglen = len(jpgstring)
         for i in range(split-1):
             self.splittedStr[i] = jpgstring[jpglen/split*i:jpglen/split*(i+1)]
         self.splittedStr[split-1] = jpgstring[jpglen/split*(split-1):]
+        cv.WaitKey(10)
 
         self.frames.append(self.splittedStr)
 
@@ -59,11 +55,15 @@ class videoStore(threading.Thread):
 
 
 def main():
-    video = videoStore()
+    capture = cv.CaptureFromCAM(0)
+    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_WIDTH, 480)
+    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 360)
+
+    video = videoStore(capture)
     video.start()
     time.sleep(1)
-    reactor.listenUDP(0, VideoServer(video))
-    reactor.run()
+    server = VideoServer(video)
+    reactor.listenUDP(0, server)
 
 if __name__ == '__main__':
     main()
