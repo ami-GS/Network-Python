@@ -6,7 +6,7 @@ import settings
 
 
 class Serve(Resource):
-    #isLeaf = True #if True, the render will be called
+    #isLeaf = True #if True, the render will be called and children are called based on requested name
 
     def getChile(self, name, request):
         if name == "":
