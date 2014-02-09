@@ -5,7 +5,7 @@ from twisted.python import log
 import settings
 
 class Serve(Resource):
-    #isLeaf = True #if True, the render will be called and children are called based on requested name
+    isLeaf = True #if True, the render will be called and children are called based on requested name
 
     def getChile(self, name, request):
         if name == "":
@@ -22,26 +22,27 @@ class Serve(Resource):
             return "POST"
 
         elif request.method == "GET":
-            request.write("<!DOCTYPE html>\n")
-            request.write("<html>\n")
-            request.write("<head>\n")
-            request.write("<meta charset=\"utf-8\">\n")
-            request.write("<title></title>\n")
-            request.write("<meta name=\"description\" content=\"\">\n")
-            request.write("</head>\n")
-            request.write("<body>\n")
-            request.write("<h1>HELLO WORLD</h1>\n")
-            request.write('<form method = "get">')
-            request.write('<p> RADIO: <input type="radio" name="ra", value="rad1", checked="checked" />ra1')
-            request.write('<input type="radio" name="ra", value="rad2" /> ra2 </p>')
-            request.write('<p><input type="submit" name="submit" value="GET!"></form>')
+            msg = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta name=\"description\" content=\"\">
+            </head>
+            <body>
+            <h1>HELLO TWISTED</h1>
+            <form method = "get">
+            <p> RADIO: <input type="radio" name="ra", value="rad1", checked="checked" /> ra1
+            <input type="radio" name="ra", value="rad2" /> ra2 </p>
+            <p><input type="submit" name="submit" value="GET!"></form>
 
-            request.write('<form method = "post">')
-            request.write('<p> RADIO: <input type="radio" name="ra", value="rad1", checked="checked" />ra1')
-            request.write('<input type="radio" name="ra", value="rad2" /> ra2 </p>')
-            request.write('<p><input type="submit" name="submit" value="POST!"></form>')
-            request.write("</body>\n")
-            request.write("</html>\n")
+            <form method = "post">
+            <p> RADIO: <input type="radio" name="ra", value="rad1", checked="checked" /> ra1
+            <input type="radio" name="ra", value="rad2" /> ra2 </p>
+            <p><input type="submit" name="submit" value="POST!"></form>
+            </body>
+            </html>
+            """
+            request.write(msg)
             request.finish()#send data to browser  
         return NOT_DONE_YET
 
