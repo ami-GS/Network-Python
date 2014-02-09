@@ -4,7 +4,6 @@ from twisted.internet import reactor
 from twisted.python import log
 
 
-
 class Serve(Resource):
     isLeaf = True
     
@@ -14,7 +13,6 @@ class Serve(Resource):
             return "HELLO"
 
         elif request.method == "GET":
-            
             request.write("<!DOCTYPE html>\n")
             request.write("<html>\n")
             request.write("<head>\n")
