@@ -6,7 +6,7 @@ import zlib
 if __name__ == "__main__":
 	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	
-	split = 10
+	split = 30
 	splittedstr = [""]*split
 	cv.NamedWindow("ClientCAM", 1)
 	capture = cv.CaptureFromCAM(0)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 		img = cv.QueryFrame(capture)
 		jpgstring = cv.EncodeImage(".jpeg", img).tostring()
 #		cv.ShowImage("ClientCAM", img)
-		jpgstring = zlib.compress(jpgstring)
+		#jpgstring = zlib.compress(jpgstring)
 
 		jpglen = len(jpgstring)
 		for i in range(split-1):
