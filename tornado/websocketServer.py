@@ -15,12 +15,20 @@ class IndexHandler(tornado.web.RequestHandler):
         self.finish()
 
 class EchoWebSocket(tornado.websocket.WebSocketHandler):
+    #on_message -> receive data
+    #write_message -> send data
     def open(self):
         #self.receive_message(self.on_message)
         print "WebSocket opend"
 
     def on_message(self, message):
-        self.write_message(u'You said:' + message)
+        #self.write_message(u'You said:' + message)
+
+#    def write_message(self):
+        i  = 0
+        while i < 20:
+            self.write_message(str(i) + " \n")
+            i += 1
 
     def on_close(self):
         print "WebSocket closed"
