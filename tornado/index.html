@@ -3,16 +3,17 @@
     <title></title>
     <script language="javascript">
       var ws = new WebSocket("ws://localhost:8080/ws");
-<!--      ws.onopen = function() {
+      ws.onopen = function() {
        ws.send("Hello, world");
-      }; -->
-      ws.onmessage = function (evt) {
-       <!--alert(evt.data);-->
-	   document.write("<strong>" + evt.data + "</strong>");
-	   document.write()
-
       };
-	  ws.writemessage
+      ws.onmessage = function (evt) {
+       
+	   document.write("<strong>" + evt.data + "</strong>");
+	   
+      };
+	  ws.writemessage = function(){
+	  ws.send("Hello, world");
+	  };
     </script>
   </head>
   <body>
