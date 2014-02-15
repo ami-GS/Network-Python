@@ -17,9 +17,12 @@ class IndexHandler(tornado.web.RequestHandler):
 class SendWebSocket(tornado.websocket.WebSocketHandler):
     #on_message -> receive data
     #write_message -> send data
-    def open(self):
+    def __init__(self, *args, **keys):
         self.i = 0
-        self.callback = PeriodicCallback(self._send_message, 400)
+        super(SendWebSocket, self).__init__(*args, **keys)
+
+    def open(self):
+        self.callback = PeriodicCallback(self._send_message, 1)
         self.callback.start()
         print "WebSocket opend"
 
@@ -30,6 +33,8 @@ class SendWebSocket(tornado.websocket.WebSocketHandler):
     def _send_message(self):
         self.i += 1
         self.write_message(str(self.i))
+        if self.i % 20 == 0:
+            self.write_message("\n")
 
     def on_close(self):
         self.callback.stop()
