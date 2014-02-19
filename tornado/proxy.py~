@@ -1,0 +1,51 @@
+import tornado.ioloop
+from tornado.web import RequestHandler, Application
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+
+class MainHandler(RequestHandler):
+    @tornado.web.asynchronous
+    def get(self):
+#        print self.request.arguments
+#        print self.request.body
+#        print self.request.body_arguments
+#        print self.request.connection
+#        print self.request.headers#header
+#        print self.request.method#GET/POST
+#        print self.request.path#/
+#        print self.request.protocol#http
+#        print self.request.remote_ip#127.0.0.1
+#        print self.request.uri#/
+#        print self.request.host#127.0.0.1:8888
+        
+        def handle_request(response):
+            print "==================="
+            if response.error:
+                print "Error:", response.error
+            else:
+                self.write(response.body)
+            self.finish()#?
+
+        request = self.request
+        req = HTTPRequest(url=request.uri, method=request.method, 
+                          headers=request.headers, body=request.body,
+                          allow_nonstandard_methods = True,)
+                          #proxy_host = "ami_GS_Proxy") #this is not supported
+
+        http_client = AsyncHTTPClient()
+
+        http_client.fetch(req, handle_request)
+        
+
+#        self.write("aiueo")
+#        print dir(self.request)
+
+
+
+if __name__ == "__main__":
+    
+    application = Application([
+        (r".*",MainHandler)
+    ])
+
+    application.listen(8888)
+    tornado.ioloop.IOLoop.instance().start()

@@ -5,13 +5,18 @@ wsaccel.patch_tornado()
 
 class MyClient(TornadoWebSocketClient):
     def opened(self):
-        self.N = 1000000
-        for i in range(self.N):
-            self.send(str(i))
+        for i in range(0, 200, 25):
+            self.send("*" * i)
+        #self.N = 1000000
+        #for i in range(self.N):
+        #    self.send(str(i))
 
     def received_message(self, m):
-        pass
-#        print m
+#        pass
+        print m
+#        if len(m) == 175:
+#            self.close(reason="a")
+        
 
 
     def closed(self, code, reason=None):
