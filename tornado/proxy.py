@@ -3,6 +3,8 @@ from tornado.web import RequestHandler, Application
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 class MainHandler(RequestHandler):
+    #This decorator does not make a method asynchronous; it tells the framework that the method is asynchronous. 
+    #If this decorator is given, the response is not finished when the method returns. It is up to the request handler to call self.finish() to finish the HTTP request.)
     @tornado.web.asynchronous
     def get(self):
 #        print self.request.arguments
@@ -22,7 +24,9 @@ class MainHandler(RequestHandler):
                 print "Error:", response.error
             else:
                 self.write(response.body)
-            self.finish()#?
+            self.finish()
+            #Finishes this response, ending the HTTP request.
+            #This is used with @tornado.web.asynchronous
 
         request = self.request
         req = HTTPRequest(url=request.uri, method=request.method, 
