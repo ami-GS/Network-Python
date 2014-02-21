@@ -13,18 +13,13 @@ class SendWebSocket(tornado.websocket.WebSocketHandler):
     #on_message -> receive data
     #write_message -> send data
     def open(self):
-        self.s = time.time()
         print "WebSocket opend"
         self.write_message("1234")
 
     def on_message(self, message):
         self.write_message(message)
-#        print message
-#        if int(message) == 999999:
-#            self.on_close()
 
     def on_close(self):
-        print time.time() - self.s
         print "WebSocket closed"
 
 app = tornado.web.Application([
