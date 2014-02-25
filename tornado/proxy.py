@@ -104,7 +104,7 @@ class HTTPSHandler(RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         print self.request.host, self.request.method
-
+        print "aaa"
         def handle_request(response):
             if response.error and not isinstance(response.error, tornado.httpclient.HTTPError):
                 print "Error:", response.error
@@ -146,7 +146,6 @@ class HTTPSHandler(RequestHandler):
     @tornado.web.asynchronous    
     def options(self):
         return self.get()#notification of trasfer option
-
     @tornado.web.asynchronous
     def connect(self):
         print self.request.uri.split(":"), "-------connect--------"        
@@ -156,11 +155,11 @@ class HTTPSHandler(RequestHandler):
 if __name__ == "__main__":
     
     app1 = Application([
-        (r"http.*", HTTPHandler),
+        (r"http:.*", HTTPHandler),
     ])
 
     app2 = Application([
-            (r"https.*", HTTPSHandler),
+            (r"https:.*", HTTPSHandler),
             ])
     
     httpServer = HTTPServer(app1)
@@ -170,6 +169,6 @@ if __name__ == "__main__":
             })
 
     app1.listen(8888)
-    app2.listen(443)
+    app2.listen(444)
 
     tornado.ioloop.IOLoop.instance().start()
