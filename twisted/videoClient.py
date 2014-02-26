@@ -36,25 +36,19 @@ class videoShow(threading.Thread):
 
     def show(self):
         if len(self.frames):
-            #try:
             jpgstring = self.frames.pop(0)
-            #try:
-                #jpgstring = zlib.decompress(jpgstring)
-            #except Exception as e:
-            #    print "error"
-            #    return
-
+#            try:
+#                jpgstring = zlib.decompress(jpgstring)
+#            except Exception as e:
+#                print e
             narray = numpy.fromstring(jpgstring, dtype = "uint8")
-            decimage = cv2.imdecode(narray,1)
+            decimage = cv2.imdecode(narray, 1)#Sometimes this returns None value
             if isinstance(decimage, type(None)):
                 print "None"
                 return
-            print "Show"
             cv2.imshow("clientCAM", decimage)
-            #except Exception as e:
-            #   print "cv error"
- #               if cv.WaitKey(10) == 27:
- #                   self.cont = False
+            if cv.WaitKey(30) == 27:
+                return
 
 def main():
     cv.NamedWindow("clientCAM", 1)

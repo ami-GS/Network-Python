@@ -6,8 +6,11 @@ import time
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 
+status = False
 class VideoServer(DatagramProtocol):
     def __init__(self, video):
+        global status
+        status = True
         self.video = video
 
     def startProtocol(self):
@@ -33,20 +36,23 @@ class videoStore(threading.Thread):
         self.splittedStr = [""]*self.split
 
     def run(self):
+        global status
         split = self.split
         while True:
-            self.takePic(split)
+            time.sleep(0.3)
+            while status:
+                self.takePic(split)
 
     def takePic(self, split):
         img = cv.QueryFrame(self.capture)
-        jpgstring = cv.EncodeImage(".jpeg", img).tostring()
-        #jpgstring = zlib.compress(jpgstring)
+        jpgstring = cv.EncodeImage(".jpg", img).tostring()
+#        jpgstring = zlib.compress(jpgstring)
 
         jpglen = len(jpgstring)
         for i in range(split-1):
             self.splittedStr[i] = jpgstring[jpglen/split*i:jpglen/split*(i+1)]
         self.splittedStr[split-1] = jpgstring[jpglen/split*(split-1):]
-        cv.WaitKey(10)
+        cv.WaitKey(30)
 
         self.frames.append(self.splittedStr)
 
@@ -56,8 +62,8 @@ class videoStore(threading.Thread):
 
 def main():
     capture = cv.CaptureFromCAM(0)
-    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_WIDTH, 480)
-    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 360)
+    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_WIDTH, 240)
+    cv.SetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT, 180)
 
     video = videoStore(capture)
     video.start()
