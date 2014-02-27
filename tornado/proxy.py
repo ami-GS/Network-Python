@@ -2,23 +2,16 @@ import tornado.ioloop
 from tornado.web import RequestHandler, Application
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.httpserver import HTTPServer
+import os, sys
+import socket
+import ssl
 
 class HTTPHandler(RequestHandler):
+#    SUPPORTED_METHODS = ['GET', 'POST', 'CONNECT']
     #This decorator does not make a method asynchronous; it tells the framework that the method is asynchronous.     #If this decorator is given, the response is not finished when the method returns. It is up to the request handler to call self.finish() to finish the HTTP request.)
     @tornado.web.asynchronous
     def get(self):
-#        print self.request.arguments
-#        print self.request.body
-#        print self.request.body_arguments
-#        print self.request.connection
-#        print self.request.headers#header
-#        print self.request.method#GET/POST
-#        print self.request.path#/
-#        print self.request.protocol#http
-#        print self.request.remote_ip#127.0.0.1
-#        print self.request.uri#/
-#        print self.request.host#127.0.0.1:8888
-        print self.request.host, self.request.method
+#        print self.request.host, self.request.method
 
         def handle_request(response):
             if response.error and not isinstance(response.error, tornado.httpclient.HTTPError):
@@ -61,50 +54,17 @@ class HTTPHandler(RequestHandler):
     @tornado.web.asynchronous    
     def options(self):
         return self.get()#notification of trasfer option
-
     @tornado.web.asynchronous
     def connect(self):
         print self.request.uri.split(":"), "-------connect--------"        
-        """
-        host, port = self.request.uri.split(':')
-        client = self.request.connection.stream
-
-        def read_from_client(data):
-            upstream.write(data)
-
-        def read_from_upstream(data):
-            client.write(data)
-
-        def client_close(data=None):
-            if upstream.closed():
-                return
-            if data:
-                upstream.write(data)
-            upstream.close()
-
-        def upstream_close(data=None):
-            if client.closed():
-                return
-            if data:
-                client.write(data)
-            client.close()
-
-        def start_tunnel():
-            client.read_until_close(client_close, read_from_client)
-            upstream.read_until_close(upstream_close, read_from_upstream)
-            client.write(b'HTTP/1.0 200 Connection established\r\n\r\n')
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        upstream = tornado.iostream.IOStream(s)
-        upstream.connect((host, int(port)), start_tunnel)
-        """
 
 
 class HTTPSHandler(RequestHandler):
+    SUPPORTED_METHODS = ("GET", "HEAD", "POST", "DELETE", "PATCH", "PUT", "OPTIONS", "CONNECT")
     @tornado.web.asynchronous
     def get(self):
+        print self.request.supports_http_1_1()
         print self.request.host, self.request.method
-        print "aaa"
         def handle_request(response):
             if response.error and not isinstance(response.error, tornado.httpclient.HTTPError):
                 print "Error:", response.error
@@ -124,8 +84,6 @@ class HTTPSHandler(RequestHandler):
             http_client.fetch(req, handle_request)
         except Exception as e:
             print e
-#        except tornado.httpclient.HTTPError as e:
-#            print "AMIAMIAMIAMIAMIAMIA", e
 
 
     @tornado.web.asynchronous    
@@ -148,27 +106,70 @@ class HTTPSHandler(RequestHandler):
         return self.get()#notification of trasfer option
     @tornado.web.asynchronous
     def connect(self):
-        print self.request.uri.split(":"), "-------connect--------"        
+        host, port = self.request.uri.split(':')
+        client = self.request.connection.stream#tornado.iostream.IOStream
+        def read_from_client(data):
+            upstream.write(data)
+            #write the given daga to this stream
 
+        def read_from_upstream(data):
+            client.write(data)
 
+        def client_close(data=None):
+            if upstream.closed():
+                return
+            if data:
+                upstream.write(data)
+            upstream.close()
+            #Close this stream
+
+        def upstream_close(data=None):
+            if client.closed():
+                return
+            if data:
+                client.write(data)
+            client.close()
+
+        def start_tunnel():
+            #Reads all data from the socket until it is closed
+            upstream.read_until_close(upstream_close, client.write)#upstream -> client
+            client.read_until_close(client_close, upstream.write)#client -> upstream
+            if self.request.supports_http_1_1():
+                client.write(b'HTTP/1.1 200 Connection established\r\n\r\n')
+            else:
+                client.write(b'HTTP/1.0 200 Connection established\r\n\r\n')
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)#make CONNECT client
+        upstream = tornado.iostream.IOStream(s)
+        """
+        ssl.wrap_socket(s, do_handshake_on_connect = False)
+        upstream = tornado.iostream.SSLIOStream(s,  ssl_options = {
+            "certfile": os.path.join(os.getcwd(), "server.crt"),
+            "keyfile": os.path.join(os.getcwd(), "server.key"),})
+        """
+        #Connect the socket to a remote address without blocking
+        #callback is called when connection is completed
+        upstream.connect((host, int(port)), start_tunnel)
+        
 
 if __name__ == "__main__":
     
     app1 = Application([
         (r"http:.*", HTTPHandler),
+       # (r".*", HTTPHandler),
     ])
 
     app2 = Application([
-            (r"https:.*", HTTPSHandler),
+        (r".*", HTTPSHandler),
             ])
     
     httpServer = HTTPServer(app1)
     httpsServer = HTTPServer(app2, ssl_options = {
-            "certfile": "./server.crt",
-            "keyfile": "./server.key",
+            "certfile": os.path.join(os.getcwd(), "server.crt"),
+            "keyfile": os.path.join(os.getcwd(), "server.key"),
             })
 
-    app1.listen(8888)
-    app2.listen(444)
+#    app1.listen(8888)
+    app2.listen(8888)
 
     tornado.ioloop.IOLoop.instance().start()
