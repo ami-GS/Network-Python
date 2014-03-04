@@ -6,70 +6,21 @@ import os, sys
 import socket
 import ssl
 
-class HTTPHandler(RequestHandler):
-#    SUPPORTED_METHODS = ['GET', 'POST', 'CONNECT']
-    #This decorator does not make a method asynchronous; it tells the framework that the method is asynchronous.     #If this decorator is given, the response is not finished when the method returns. It is up to the request handler to call self.finish() to finish the HTTP request.)
-    @tornado.web.asynchronous
-    def get(self):
-#        print self.request.host, self.request.method
-
-        def handle_request(response):
-            if response.error and not isinstance(response.error, tornado.httpclient.HTTPError):
-                print "Error:", response.error
-            else:
-                #self.set_status(response.code)#200 and so on
-                self.write(response.body)
-            self.finish(" ")#in case of response.body == None(may be)
-            #Finishes this response, ending the HTTP request.
-            #This is used with @tornado.web.asynchronous
-
-        request = self.request
-        req = HTTPRequest(url=request.uri, method=request.method, 
-                          headers=request.headers, body=request.body,
-                          allow_nonstandard_methods = True, follow_redirects = False,)
-#                          validate_cert=False)
-                          #proxy_host = "ami_GS_Proxy") #this is not supported
-        http_client = AsyncHTTPClient()
-        try:
-            http_client.fetch(req, handle_request)
-        except tornado.httpclient.HTTPError as e:
-            print "AMIAMIAMIAMIAMIAMIA", e
-
-
-    @tornado.web.asynchronous    
-    def post(self):
-        return self.get()
-    @tornado.web.asynchronous    
-    def head(self):
-        return self.get()#same as GET, but it returns only HTTP header
-    @tornado.web.asynchronous    
-    def delete(self):
-        return self.get()#delete file located in  server by specifing URI
-    @tornado.web.asynchronous    
-    def patch(self):
-        return self.get()#same as put, but it changes only difference 
-    @tornado.web.asynchronous    
-    def put(self):
-        return self.get()#replace file located in server by specifing URI
-    @tornado.web.asynchronous    
-    def options(self):
-        return self.get()#notification of trasfer option
-    @tornado.web.asynchronous
-    def connect(self):
-        print self.request.uri.split(":"), "-------connect--------"        
-
 
 class HTTPSHandler(RequestHandler):
     SUPPORTED_METHODS = ("GET", "HEAD", "POST", "DELETE", "PATCH", "PUT", "OPTIONS", "CONNECT")
+    
     @tornado.web.asynchronous
-    def get(self):
+    def handler(self):
         print self.request.supports_http_1_1()
         print self.request.host, self.request.method
         def handle_request(response):
-            if response.error and not isinstance(response.error, tornado.httpclient.HTTPError):
+            if response.error:
+                self.set_status(500)
+                self.write("Internal server error")
                 print "Error:", response.error
             else:
-                #self.set_status(response.code)#200 and so on
+                self.set_status(response.code)#200 and so on
                 self.write(response.body)
             self.finish(" ")#in case of response.body == None(may be)
 
@@ -85,25 +36,27 @@ class HTTPSHandler(RequestHandler):
         except Exception as e:
             print e
 
-
+    @tornado.web.asynchronous
+    def get(self):
+        return self.handler()
     @tornado.web.asynchronous    
     def post(self):
-        return self.get()
+        return self.handler()
     @tornado.web.asynchronous    
     def head(self):
-        return self.get()#same as GET, but it returns only HTTP header
+        return self.handler()#same as GET, but it returns only HTTP header
     @tornado.web.asynchronous    
     def delete(self):
-        return self.get()#delete file located in  server by specifing URI
+        return self.handler()#delete file located in  server by specifing URI
     @tornado.web.asynchronous    
     def patch(self):
-        return self.get()#same as put, but it changes only difference 
+        return self.handler()#same as put, but it changes only difference 
     @tornado.web.asynchronous    
     def put(self):
-        return self.get()#replace file located in server by specifing URI
+        return self.handler()#replace file located in server by specifing URI
     @tornado.web.asynchronous    
     def options(self):
-        return self.get()#notification of trasfer option
+        return self.handler()#notification of trasfer option
     @tornado.web.asynchronous
     def connect(self):
         host, port = self.request.uri.split(':')
@@ -153,23 +106,14 @@ class HTTPSHandler(RequestHandler):
         
 
 if __name__ == "__main__":
-    
-    app1 = Application([
-        (r"http:.*", HTTPHandler),
-       # (r".*", HTTPHandler),
-    ])
-
-    app2 = Application([
+    app = Application([
         (r".*", HTTPSHandler),
             ])
     
-    httpServer = HTTPServer(app1)
-    httpsServer = HTTPServer(app2, ssl_options = {
+    proxyServer = HTTPServer(app, ssl_options = {
             "certfile": os.path.join(os.getcwd(), "server.crt"),
             "keyfile": os.path.join(os.getcwd(), "server.key"),
             })
 
-#    app1.listen(8888)
-    app2.listen(8888)
-
+    proxyServer.listen(8888)
     tornado.ioloop.IOLoop.instance().start()
