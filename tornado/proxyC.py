@@ -24,7 +24,6 @@ class ProxyHandler(tornado.web.RequestHandler):
         for header in ('Date', 'Cache-Control', 'Server',
                        'Content-Type', 'Location'):
             v = response.headers.get(header)
-        resp = [response.code, v, response.body]
         r.rpush(self.request.uri, response.code)
         r.rpush(self.request.uri, header)
         r.rpush(self.request.uri, v)        
