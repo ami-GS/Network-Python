@@ -9,9 +9,17 @@ import tornado.httpclient
 
 __all__ = ['ProxyHandler', 'run_proxy']
 
-
+pageCache = {}
 class ProxyHandler(tornado.web.RequestHandler):
     SUPPORTED_METHODS = ['GET', 'POST', 'CONNECT']
+    @tornado.web.asynchronous
+    def returnCache(self):
+        pass
+
+    @tornado.web.asynchronous
+    def my_finish(self, response):
+            pageCache[self.request.uri] = response 
+            print "cache !!"
 
     @tornado.web.asynchronous
     def get(self):
@@ -33,21 +41,28 @@ class ProxyHandler(tornado.web.RequestHandler):
                     self.write(response.body)
                 self.finish()
 
-        req = tornado.httpclient.HTTPRequest(url=self.request.uri,
-            method=self.request.method, body=self.request.body,
-            headers=self.request.headers, follow_redirects=False,
-            allow_nonstandard_methods=True)
+                if self.request.uri not in pageCache:
+                    self.my_finish(response)
 
-        client = tornado.httpclient.AsyncHTTPClient()
-        try:
-            client.fetch(req, handle_response)
-        except tornado.httpclient.HTTPError as e:
-            if hasattr(e, 'response') and e.response:
-                handle_response(e.response)
-            else:
-                self.set_status(500)
-                self.write('Internal server error:\n' + str(e))
-                self.finish()
+        if self.request.uri in pageCache:
+            print "return cache !!"
+            handle_response(pageCache[self.request.uri])
+        else:
+            req = tornado.httpclient.HTTPRequest(url=self.request.uri,
+                                                 method=self.request.method, body=self.request.body,
+                                                 headers=self.request.headers, follow_redirects=False,
+                                                 allow_nonstandard_methods=True)
+            print "access"
+            client = tornado.httpclient.AsyncHTTPClient()
+            try:
+                client.fetch(req, handle_response)
+            except tornado.httpclient.HTTPError as e:
+                if hasattr(e, 'response') and e.response:
+                    handle_response(e.response)
+                else:
+                    self.set_status(500)
+                    self.write('Internal server error:\n' + str(e))
+                    self.finish()
 
     @tornado.web.asynchronous
     def post(self):
@@ -81,7 +96,7 @@ class ProxyHandler(tornado.web.RequestHandler):
         def start_tunnel():
             client.read_until_close(client_close, read_from_client)
             upstream.read_until_close(upstream_close, read_from_upstream)
-            client.write(b'HTTP/1.0 200 Connection established\r\n\r\n')
+            client.write(b'HTTP/1.1 200 Connection established\r\n\r\n')
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         upstream = tornado.iostream.IOStream(s)
