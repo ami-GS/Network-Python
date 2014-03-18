@@ -6,10 +6,12 @@ import tornado.ioloop
 import tornado.iostream
 import tornado.web
 import tornado.httpclient
+import redis
 
 __all__ = ['ProxyHandler', 'run_proxy']
 
-pageCache = {}
+r = redis.Redis(host="127.0.0.1", port=6379, db=0)
+r.flushall()
 class ProxyHandler(tornado.web.RequestHandler):
     SUPPORTED_METHODS = ['GET', 'POST', 'CONNECT']
     @tornado.web.asynchronous
@@ -17,14 +19,26 @@ class ProxyHandler(tornado.web.RequestHandler):
         pass
 
     @tornado.web.asynchronous
-    def my_finish(self, response):
-            pageCache[self.request.uri] = response 
-            print "cache !!"
+    def setCache(self, response):
+        v = ""
+        for header in ('Date', 'Cache-Control', 'Server',
+                       'Content-Type', 'Location'):
+            v = response.headers.get(header)
+        resp = [response.code, v, response.body]
+        r.rpush(self.request.uri, response.code)
+        r.rpush(self.request.uri, header)
+        r.rpush(self.request.uri, v)        
+        r.rpush(self.request.uri, response.body)
+        r.expire(self.request.uri, 100)
+        print "cache !!"
 
     @tornado.web.asynchronous
     def get(self):
 
         def handle_response(response):
+            print response.code
+            if response.code == 599:
+                return
             if response.error and not isinstance(response.error,
                     tornado.httpclient.HTTPError):
                 self.set_status(500)
@@ -41,18 +55,26 @@ class ProxyHandler(tornado.web.RequestHandler):
                     self.write(response.body)
                 self.finish()
 
-                if self.request.uri not in pageCache:
-                    self.my_finish(response)
+                if not r.exists(self.request.uri):
+                    self.setCache(response)
 
-        if self.request.uri in pageCache:
+        def my_handler(response):
+            self.set_status(int(response[0]))
+            if response[2]:
+                self.set_header(response[1], response[2])
+            if response[3]:
+                self.write(response[3])
+            self.finish()
+
+        if r.exists(self.request.uri):
             print "return cache !!"
-            handle_response(pageCache[self.request.uri])
+            my_handler(r.lrange(self.request.uri,0,-1))
         else:
-            req = tornado.httpclient.HTTPRequest(url=self.request.uri,
-                                                 method=self.request.method, body=self.request.body,
-                                                 headers=self.request.headers, follow_redirects=False,
-                                                 allow_nonstandard_methods=True)
-            print "access"
+            req = tornado.httpclient.HTTPRequest(
+                url=self.request.uri,
+                method=self.request.method, body=self.request.body,
+                headers=self.request.headers, follow_redirects=False,
+                allow_nonstandard_methods=True)
             client = tornado.httpclient.AsyncHTTPClient()
             try:
                 client.fetch(req, handle_response)
